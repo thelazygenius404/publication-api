@@ -1,7 +1,7 @@
 package com.smaservices.publication_api.service;
 
 import com.smaservices.publication_api.dto.n8n.N8nPublicationPayload;
-import com.smaservices.publication_api.entity.Publication;
+import com.smaservices.publication_api.event.PublicationDispatchEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -40,16 +40,25 @@ public class N8nWebhookService {
     }
 
     public void dispatch(
-            Publication publication) {
+            PublicationDispatchEvent event) {
 
         String callbackUrl =
                 publicUrl
                         + "/api/n8n/callback";
 
+        String contextUrl =
+                publicUrl
+                        + "/api/n8n/internal/publications/"
+                        + event.publicationId()
+                        + "/context";
+
         N8nPublicationPayload payload =
                 new N8nPublicationPayload(
-                        publication,
-                        callbackUrl
+                        event.publicationId(),
+                        event.destination(),
+                        event.scheduledAt(),
+                        callbackUrl,
+                        contextUrl
                 );
 
         restClient

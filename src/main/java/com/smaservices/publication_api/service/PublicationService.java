@@ -7,9 +7,11 @@ import com.smaservices.publication_api.entity.Publication;
 import com.smaservices.publication_api.entity.User;
 import com.smaservices.publication_api.entity.enums.ContentStatus;
 import com.smaservices.publication_api.entity.enums.PublicationStatus;
+import com.smaservices.publication_api.event.PublicationDispatchEvent;
 import com.smaservices.publication_api.repository.ContentRepository;
 import com.smaservices.publication_api.repository.PublicationRepository;
 import com.smaservices.publication_api.repository.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,14 +26,14 @@ public class PublicationService {
     private final ContentRepository contentRepository;
     private final UserRepository userRepository;
     private final AuditService auditService;
-    private final N8nWebhookService n8nWebhookService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public PublicationService(
             PublicationRepository publicationRepository,
             ContentRepository contentRepository,
             UserRepository userRepository,
             AuditService auditService,
-            N8nWebhookService n8nWebhookService) {
+            ApplicationEventPublisher eventPublisher) {
 
         this.publicationRepository =
                 publicationRepository;
@@ -45,8 +47,8 @@ public class PublicationService {
         this.auditService =
                 auditService;
 
-        this.n8nWebhookService =
-                n8nWebhookService;
+        this.eventPublisher =
+                eventPublisher;
     }
 
     @Transactional
@@ -135,34 +137,13 @@ public class PublicationService {
         );
         for (Publication publication : publications) {
 
-            try {
-
-                n8nWebhookService.dispatch(
-                        publication
-                );
-
-            } catch (Exception exception) {
-
-                publication.setStatus(
-                        PublicationStatus.FAILED
-                );
-
-                publication.setErrorMessage(
-                        "Impossible de transmettre la publication à n8n."
-                );
-
-                publicationRepository.save(
-                        publication
-                );
-
-                auditService.log(
-                        user,
-                        "N8N_DISPATCH_FAILED",
-                        "Publication",
-                        publication.getId(),
-                        exception.getMessage()
-                );
-            }
+            eventPublisher.publishEvent(
+                    new PublicationDispatchEvent(
+                            publication.getId(),
+                            publication.getDestination(),
+                            publication.getScheduledAt()
+                    )
+            );
         }
         return publications
                 .stream()
