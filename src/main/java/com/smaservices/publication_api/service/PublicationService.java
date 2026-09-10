@@ -146,16 +146,6 @@ public class PublicationService {
                     )
             );
         }
-        for (Publication publication : publications) {
-
-            eventPublisher.publishEvent(
-                    new PublicationDispatchEvent(
-                            publication.getId(),
-                            publication.getDestination(),
-                            publication.getScheduledAt()
-                    )
-            );
-        }
         return publications
                 .stream()
                 .map(PublicationResponse::new)
