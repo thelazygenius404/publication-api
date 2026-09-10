@@ -98,8 +98,18 @@ public class ContentService {
             );
         }
 
-        content.setTitle(request.getTitle().trim());
-        content.setBody(request.getBody().trim());
+        content.setTitle(
+                request.getTitle().trim()
+        );
+
+        content.setBody(
+                request.getBody().trim()
+        );
+
+        // Toute modification invalide la validation précédente.
+        content.setStatus(
+                ContentStatus.DRAFT
+        );
 
         Content saved =
                 contentRepository.save(content);
@@ -125,7 +135,19 @@ public class ContentService {
         Content content =
                 findOwnedContent(contentId, user);
 
-        content.setStatus(ContentStatus.READY);
+        if (content.getStatus() == ContentStatus.ARCHIVED) {
+            throw new IllegalStateException(
+                    "Un contenu archivé ne peut pas être validé."
+            );
+        }
+
+        if (content.getStatus() == ContentStatus.READY) {
+            return new ContentResponse(content);
+        }
+
+        content.setStatus(
+                ContentStatus.READY
+        );
 
         Content saved =
                 contentRepository.save(content);
