@@ -24,7 +24,12 @@ public class ThirdPartyAccountController {
         // L'email est extrait du SecurityContext (alimenté par le JwtAuthenticationFilter)
         String userEmail = authentication.getName();
 
-        accountService.linkWordPressAccount(userEmail, request.getWpUsername(), request.getWpAppPassword());
+        accountService.linkWordPressAccount(
+                authentication.getName(),
+                request.getSiteUrl(),
+                request.getWpUsername(),
+                request.getWpAppPassword()
+        );
 
         return ResponseEntity.ok("Compte WordPress lié avec succès.");
     }

@@ -5,7 +5,17 @@ import com.smaservices.publication_api.entity.enums.ThirdPartyType;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "third_party_accounts")
+@Table(
+        name = "third_party_accounts",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        columnNames = {
+                                "user_id",
+                                "type"
+                        }
+                )
+        }
+)
 public class ThirdPartyAccount {
 
     @Id
@@ -16,32 +26,98 @@ public class ThirdPartyAccount {
     @Column(nullable = false)
     private ThirdPartyType type;
 
-    // Stockage de la version chiffrée (enc) du token
-    @Column(nullable = false, length = 1024)
+    @Column(name = "site_url", length = 500)
+    private String siteUrl;
+
+    @Column(
+            name = "access_token_enc",
+            nullable = false,
+            length = 2048
+    )
     private String accessTokenEnc;
 
-    @Column(length = 1024)
+    @Column(
+            name = "refresh_token_enc",
+            length = 2048
+    )
     private String refreshTokenEnc;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AccountStatus status = AccountStatus.CONNECTED;
+    private AccountStatus status =
+            AccountStatus.CONNECTED;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne(
+            fetch = FetchType.LAZY,
+            optional = false
+    )
+    @JoinColumn(
+            name = "user_id",
+            nullable = false
+    )
     private User user;
 
-    // Ajoutez les Getters et Setters standard
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public ThirdPartyType getType() { return type; }
-    public void setType(ThirdPartyType type) { this.type = type; }
-    public String getAccessTokenEnc() { return accessTokenEnc; }
-    public void setAccessTokenEnc(String accessTokenEnc) { this.accessTokenEnc = accessTokenEnc; }
-    public String getRefreshTokenEnc() { return refreshTokenEnc; }
-    public void setRefreshTokenEnc(String refreshTokenEnc) { this.refreshTokenEnc = refreshTokenEnc; }
-    public AccountStatus getStatus() { return status; }
-    public void setStatus(AccountStatus status) { this.status = status; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public ThirdPartyType getType() {
+        return type;
+    }
+
+    public void setType(
+            ThirdPartyType type) {
+        this.type = type;
+    }
+
+    public String getSiteUrl() {
+        return siteUrl;
+    }
+
+    public void setSiteUrl(
+            String siteUrl) {
+        this.siteUrl = siteUrl;
+    }
+
+    public String getAccessTokenEnc() {
+        return accessTokenEnc;
+    }
+
+    public void setAccessTokenEnc(
+            String accessTokenEnc) {
+        this.accessTokenEnc =
+                accessTokenEnc;
+    }
+
+    public String getRefreshTokenEnc() {
+        return refreshTokenEnc;
+    }
+
+    public void setRefreshTokenEnc(
+            String refreshTokenEnc) {
+        this.refreshTokenEnc =
+                refreshTokenEnc;
+    }
+
+    public AccountStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(
+            AccountStatus status) {
+        this.status = status;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(
+            User user) {
+        this.user = user;
+    }
 }
