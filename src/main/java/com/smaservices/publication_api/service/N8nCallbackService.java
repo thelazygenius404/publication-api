@@ -50,6 +50,26 @@ public class N8nCallbackService {
                 requestedStatus
         );
 
+        PublicationStatus currentStatus =
+                publication.getStatus();
+
+        if (currentStatus == requestedStatus) {
+
+            if (request.getN8nExecutionId() != null
+                    && publication.getN8nExecutionId() == null) {
+
+                publication.setN8nExecutionId(
+                        request.getN8nExecutionId()
+                );
+
+                return publicationRepository.save(
+                        publication
+                );
+            }
+
+            return publication;
+        }
+
         publication.setStatus(
                 requestedStatus
         );
@@ -67,13 +87,18 @@ public class N8nCallbackService {
             }
 
             case PUBLISHED -> {
-                publication.setPublishedAt(
-                        Instant.now()
-                );
 
-                publication.setExternalId(
-                        request.getExternalId()
-                );
+                if (publication.getPublishedAt() == null) {
+                    publication.setPublishedAt(
+                            Instant.now()
+                    );
+                }
+
+                if (request.getExternalId() != null) {
+                    publication.setExternalId(
+                            request.getExternalId()
+                    );
+                }
 
                 publication.setErrorMessage(null);
             }

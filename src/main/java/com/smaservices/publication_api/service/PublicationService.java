@@ -127,14 +127,25 @@ public class PublicationService {
             );
         }
 
-        auditService.log(
-                user,
-                "PUBLICATION_CREATED",
-                "Content",
-                content.getId(),
-                "Destinations : "
-                        + request.getDestinations()
-        );
+        for (Publication publication : publications) {
+
+            auditService.log(
+                    user,
+                    "PUBLICATION_CREATED",
+                    "Publication",
+                    publication.getId(),
+                    "Destination : "
+                            + publication.getDestination()
+            );
+
+            eventPublisher.publishEvent(
+                    new PublicationDispatchEvent(
+                            publication.getId(),
+                            publication.getDestination(),
+                            publication.getScheduledAt()
+                    )
+            );
+        }
         for (Publication publication : publications) {
 
             eventPublisher.publishEvent(

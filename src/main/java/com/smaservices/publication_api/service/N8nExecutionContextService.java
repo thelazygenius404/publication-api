@@ -10,6 +10,8 @@ import com.smaservices.publication_api.repository.PublicationRepository;
 import com.smaservices.publication_api.repository.ThirdPartyAccountRepository;
 import com.smaservices.publication_api.security.EncryptionService;
 import org.springframework.stereotype.Service;
+import com.smaservices.publication_api.exception.ApiException;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import com.smaservices.publication_api.entity.enums.PublicationStatus;
 
@@ -46,7 +48,9 @@ public class N8nExecutionContextService {
                 publicationRepository
                         .findById(publicationId)
                         .orElseThrow(
-                                () -> new IllegalArgumentException(
+                                () -> new ApiException(
+                                        HttpStatus.NOT_FOUND,
+                                        "PUBLICATION_NOT_FOUND",
                                         "Publication introuvable."
                                 )
                         );
@@ -55,19 +59,28 @@ public class N8nExecutionContextService {
                 publication.getStatus();
 
         if (status == PublicationStatus.CANCELLED) {
-            throw new IllegalStateException(
+
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "PUBLICATION_CANCELLED",
                     "La publication a été annulée."
             );
         }
 
         if (status == PublicationStatus.PUBLISHED) {
-            throw new IllegalStateException(
+
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "PUBLICATION_ALREADY_PUBLISHED",
                     "La publication est déjà publiée."
             );
         }
 
         if (status == PublicationStatus.FAILED) {
-            throw new IllegalStateException(
+
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "PUBLICATION_FAILED",
                     "La publication est en échec."
             );
         }
@@ -89,7 +102,9 @@ public class N8nExecutionContextService {
                     );
 
             case LINKEDIN ->
-                    throw new IllegalStateException(
+                    throw new ApiException(
+                            HttpStatus.NOT_IMPLEMENTED,
+                            "LINKEDIN_NOT_IMPLEMENTED",
                             "L'intégration LinkedIn n'est pas encore configurée."
                     );
         };
@@ -106,15 +121,18 @@ public class N8nExecutionContextService {
                                 ThirdPartyType.WORDPRESS
                         )
                         .orElseThrow(
-                                () -> new IllegalStateException(
-                                        "Aucun compte WordPress connecté."
-                                )
+                                () -> new ApiException(
+                HttpStatus.CONFLICT,
+                "WORDPRESS_ACCOUNT_NOT_CONNECTED",
+                "Aucun compte WordPress connecté.")
                         );
 
         if (account.getStatus()
                 != AccountStatus.CONNECTED) {
 
-            throw new IllegalStateException(
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "WORDPRESS_ACCOUNT_INACTIVE",
                     "Le compte WordPress n'est pas actif."
             );
         }
