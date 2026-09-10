@@ -1,0 +1,666 @@
+{
+  "name": "Publication Orchestrator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "publications",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "3e2a520a-4df0-4710-9334-dba62b47d5cd",
+      "name": "1. Receive Publication",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2352,
+        160
+      ],
+      "webhookId": "2923b76c-b0e8-4410-a975-736dc45a6014",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "iWam9k4DtdwyCfPE",
+          "name": "Publication API Shared Secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $json.body ?? {};\n\nconst publicationId = Number(input.publicationId);\nif (!Number.isInteger(publicationId) || publicationId <= 0) {\n  throw new Error('publicationId must be a positive integer');\n}\n\nconst destination = String(input.destination ?? '').toUpperCase();\nif (!['WORDPRESS', 'LINKEDIN'].includes(destination)) {\n  throw new Error('destination must be WORDPRESS or LINKEDIN');\n}\n\nif (!input.callbackUrl || !input.contextUrl) {\n  throw new Error('callbackUrl and contextUrl are required');\n}\n\nconst scheduledAt = input.scheduledAt || null;\nif (scheduledAt && Number.isNaN(Date.parse(scheduledAt))) {\n  throw new Error('scheduledAt must be a valid ISO-8601 date/time');\n}\n\nreturn [{\n  json: {\n    publicationId,\n    destination,\n    scheduledAt,\n    callbackUrl: String(input.callbackUrl),\n    contextUrl: String(input.contextUrl)\n  }\n}];"
+      },
+      "id": "db6962b8-06c2-4dda-adc2-e68c24e57e8a",
+      "name": "4. Normalize Job",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2128,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"accepted\":true}",
+        "options": {
+          "responseCode": 202,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "0541cce5-0277-47f5-b55c-f5a1e1ff188e",
+      "name": "5. Respond Accepted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1904,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d1b48ba6-604f-4337-89b1-e25dce000c41",
+              "leftValue": "={{ $json.scheduledAt }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0271b171-78c0-43a5-92d3-8aab5fb92bc1",
+      "name": "6. Scheduled?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1680,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "specificTime",
+        "dateTime": "={{ $json.scheduledAt }}"
+      },
+      "id": "3ea30c8b-344e-4946-b9cb-e538d8f70cef",
+      "name": "7. Wait Until scheduledAt",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1456,
+        96
+      ],
+      "webhookId": "57ab69e0-b34c-41c3-8d09-5e104d3e9968"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cf205256-267e-47f5-9161-a2537ab5d9af",
+              "leftValue": "={{ $json.destination }}",
+              "rightValue": "WORDPRESS",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "46166017-ae53-4138-9051-7f7521aa2de7",
+      "name": "8. WordPress?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1232,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const job = $('4. Normalize Job').first().json;\n\nreturn [{\n  json: {\n    callbackUrl: job.callbackUrl,\n    publicationId: job.publicationId,\n    status: 'FAILED',\n    externalId: null,\n    n8nExecutionId: $execution.id,\n    errorMessage: `Destination ${job.destination} is not enabled in this workflow yet`\n  }\n}];"
+      },
+      "id": "eafef361-9858-4640-b310-f7bbcb40e238",
+      "name": "8B. Unsupported Destination",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        448
+      ],
+      "notes": "LinkedIn is intentionally marked FAILED until the Spring Boot LinkedIn execution context/OAuth implementation is added."
+    },
+    {
+      "parameters": {
+        "url": "={{ $('4. Normalize Job').first().json.contextUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": []
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "ef2edf37-7b1b-4a80-8c88-15d711c9a780",
+      "name": "9. Get Execution Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1008,
+        64
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "iWam9k4DtdwyCfPE",
+          "name": "Publication API Shared Secret"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json;\nconst job = $('4. Normalize Job').first().json;\n\nfunction extractApiError(data) {\n\n  if (\n    data &&\n    typeof data === 'object' &&\n    data.code &&\n    data.message\n  ) {\n    return data;\n  }\n\n  const raw =\n    data?.error?.message ??\n    data?.message ??\n    '';\n\n  const text = String(raw);\n\n  const firstBrace = text.indexOf('{');\n  const lastBrace = text.lastIndexOf('}');\n\n  if (\n    firstBrace !== -1 &&\n    lastBrace > firstBrace\n  ) {\n\n    let candidate =\n      text.substring(\n        firstBrace,\n        lastBrace + 1\n      );\n\n    try {\n      return JSON.parse(candidate);\n    } catch (_) {}\n\n    /*\n     * n8n may wrap the Spring JSON as:\n     *\n     * 409 - \"{\\\"code\\\":\\\"PUBLICATION_CANCELLED\\\", ...}\"\n     */\n    try {\n\n      candidate =\n        candidate\n          .replace(/\\\\\"/g, '\"')\n          .replace(/\\\\\\\\/g, '\\\\');\n\n      return JSON.parse(candidate);\n\n    } catch (_) {}\n  }\n\n  return null;\n}\n\nconst apiError =\n  extractApiError(response);\n\nconst contextOk =\n  !apiError &&\n  response?.publicationId != null &&\n  response?.destination === 'WORDPRESS' &&\n  Boolean(response?.siteUrl) &&\n  Boolean(response?.username) &&\n  Boolean(response?.credential);\n\nconst errorCode =\n  apiError?.code ?? null;\n\nconst stopCleanlyCodes = [\n  'PUBLICATION_CANCELLED',\n  'PUBLICATION_ALREADY_PUBLISHED',\n  'PUBLICATION_FAILED',\n  'PUBLICATION_NOT_FOUND'\n];\n\nconst stopCleanly =\n  errorCode !== null &&\n  stopCleanlyCodes.includes(errorCode);\n\nreturn [\n  {\n    json: {\n      ...job,\n\n      contextOk,\n\n      context:\n        contextOk\n          ? response\n          : null,\n\n      errorCode,\n\n      stopCleanly,\n\n      contextError:\n        contextOk\n          ? null\n          : (\n              apiError?.message ??\n              response?.error?.message ??\n              response?.message ??\n              'Unable to obtain execution context'\n            )\n    }\n  }\n];"
+      },
+      "id": "98264b7a-19f2-48a1-8526-99f4cc1e8210",
+      "name": "10. Check Execution Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -784,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "33b310b7-03a5-4ae3-a8fe-d18db5442b15",
+              "leftValue": "={{ $json.contextOk }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "357eab6a-ec0a-43f0-a638-6e3c0efc1038",
+      "name": "11. Context OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -336,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    callbackUrl: $json.callbackUrl,\n    publicationId: $json.publicationId,\n    status: 'FAILED',\n    externalId: null,\n    n8nExecutionId: $execution.id,\n    errorMessage: $json.contextError || 'Unable to obtain execution context'\n  }\n}];"
+      },
+      "id": "360db1cb-82db-4a3c-8907-0a161910885c",
+      "name": "11B. Build Context Failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('4. Normalize Job').first().json.callbackUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ publicationId: $('4. Normalize Job').first().json.publicationId, status: 'PROCESSING', n8nExecutionId: $execution.id }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "9a7c47ed-ca73-4d9a-8b9f-0753f882dd9c",
+      "name": "12. Callback PROCESSING",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -112,
+        64
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "iWam9k4DtdwyCfPE",
+          "name": "Publication API Shared Secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('10. Check Execution Context').first().json;\nconst context = data.context;\n\nif (!context) {\n  throw new Error('WordPress context is missing');\n}\n\nconst raw = `${context.username}:${context.credential}`;\nconst authorization = `Basic ${Buffer.from(raw, 'utf8').toString('base64')}`;\n\nreturn [{\n  json: {\n    publicationId: data.publicationId,\n    callbackUrl: data.callbackUrl,\n    siteUrl: context.siteUrl.replace(/\\/+$/, ''),\n    title: context.title,\n    body: context.body,\n    authorization\n  }\n}];"
+      },
+      "id": "4f6602b5-b124-49d3-9914-11801e696b25",
+      "name": "13. Prepare WordPress Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.siteUrl + '/wp-json/wp/v2/posts' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $json.authorization }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $json.title, content: $json.body, status: 'publish' }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "fc1936ed-b51b-4a94-9286-55699ae064bc",
+      "name": "14. Publish to WordPress",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        336,
+        64
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json;\nconst job = $('4. Normalize Job').first().json;\n\nconst errorText =\n  response?.error?.message ??\n  response?.error ??\n  null;\n\nconst success = !errorText && response?.id != null;\n\nreturn [{\n  json: {\n    callbackUrl: job.callbackUrl,\n    publicationId: job.publicationId,\n    status: success ? 'PUBLISHED' : 'FAILED',\n    externalId: success ? String(response.id) : null,\n    n8nExecutionId: $execution.id,\n    errorMessage: success\n      ? null\n      : String(errorText || response?.message || 'WordPress publication failed')\n  }\n}];"
+      },
+      "id": "4e9ea41f-b3b7-47ff-85ad-17efab9811e0",
+      "name": "15. Build WordPress Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.callbackUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ publicationId: $json.publicationId, status: $json.status, externalId: $json.externalId, n8nExecutionId: $json.n8nExecutionId, errorMessage: $json.errorMessage }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "6eeed68c-9ef4-4988-8026-86229b3dd485",
+      "name": "16. Callback FINAL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        784,
+        256
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "iWam9k4DtdwyCfPE",
+          "name": "Publication API Shared Secret"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "17a15f46-bbe8-45fc-a0e4-e4458ca368cf",
+              "leftValue": "={{ $json.stopCleanly }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -560,
+        64
+      ],
+      "id": "9f7865cd-be63-428c-b75a-96b0b01039ec",
+      "name": "11. Stop Cleanly?"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        -32
+      ],
+      "id": "38274d7e-b66e-4057-82f0-30137174a5d6",
+      "name": "11A. Stop Cleanly"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "1. Receive Publication": {
+      "main": [
+        [
+          {
+            "node": "4. Normalize Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Normalize Job": {
+      "main": [
+        [
+          {
+            "node": "5. Respond Accepted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Respond Accepted": {
+      "main": [
+        [
+          {
+            "node": "6. Scheduled?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Scheduled?": {
+      "main": [
+        [
+          {
+            "node": "7. Wait Until scheduledAt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "8. WordPress?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. Wait Until scheduledAt": {
+      "main": [
+        [
+          {
+            "node": "8. WordPress?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. WordPress?": {
+      "main": [
+        [
+          {
+            "node": "9. Get Execution Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "8B. Unsupported Destination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8B. Unsupported Destination": {
+      "main": [
+        [
+          {
+            "node": "16. Callback FINAL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. Get Execution Context": {
+      "main": [
+        [
+          {
+            "node": "10. Check Execution Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10. Check Execution Context": {
+      "main": [
+        [
+          {
+            "node": "11. Stop Cleanly?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11. Context OK?": {
+      "main": [
+        [
+          {
+            "node": "12. Callback PROCESSING",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "11B. Build Context Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11B. Build Context Failure": {
+      "main": [
+        [
+          {
+            "node": "16. Callback FINAL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "12. Callback PROCESSING": {
+      "main": [
+        [
+          {
+            "node": "13. Prepare WordPress Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "13. Prepare WordPress Request": {
+      "main": [
+        [
+          {
+            "node": "14. Publish to WordPress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14. Publish to WordPress": {
+      "main": [
+        [
+          {
+            "node": "15. Build WordPress Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15. Build WordPress Result": {
+      "main": [
+        [
+          {
+            "node": "16. Callback FINAL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11. Stop Cleanly?": {
+      "main": [
+        [
+          {
+            "node": "11A. Stop Cleanly",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "11. Context OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ace60308-129c-42be-8f8c-2f90d347144d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8d40fdfe780680239960f0dbdfb6360283dbf9967081519544b693ad3aa13807"
+  },
+  "nodeGroups": [],
+  "id": "uwb42XCbyLy9eJ5V",
+  "tags": []
+}
