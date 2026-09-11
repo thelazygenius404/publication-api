@@ -4,6 +4,8 @@ import com.smaservices.publication_api.entity.enums.AccountStatus;
 import com.smaservices.publication_api.entity.enums.ThirdPartyType;
 import jakarta.persistence.*;
 
+import java.time.Instant;
+
 @Entity
 @Table(
         name = "third_party_accounts",
@@ -41,6 +43,16 @@ public class ThirdPartyAccount {
             length = 2048
     )
     private String refreshTokenEnc;
+    @Column(
+            name = "external_account_id",
+            length = 255
+    )
+    private String externalAccountId;
+
+    @Column(
+            name = "access_token_expires_at"
+    )
+    private Instant accessTokenExpiresAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -119,5 +131,26 @@ public class ThirdPartyAccount {
     public void setUser(
             User user) {
         this.user = user;
+    }
+    public String getExternalAccountId() {
+        return externalAccountId;
+    }
+
+    public void setExternalAccountId(
+            String externalAccountId) {
+
+        this.externalAccountId =
+                externalAccountId;
+    }
+
+    public Instant getAccessTokenExpiresAt() {
+        return accessTokenExpiresAt;
+    }
+
+    public void setAccessTokenExpiresAt(
+            Instant accessTokenExpiresAt) {
+
+        this.accessTokenExpiresAt =
+                accessTokenExpiresAt;
     }
 }

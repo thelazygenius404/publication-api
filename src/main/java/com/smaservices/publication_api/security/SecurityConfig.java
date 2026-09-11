@@ -48,7 +48,8 @@ public class SecurityConfig {
                                 "/auth/**",
                                 "/error",
                                 "/api/n8n/callback",
-                                "/api/n8n/internal/**"
+                                "/api/n8n/internal/**",
+                                "/api/accounts/linkedin/callback"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
