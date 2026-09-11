@@ -16,6 +16,9 @@ public class N8nExecutionContext {
     private final String username;
     private final String credential;
 
+    private final String authorUrn;
+    private final String apiVersion;
+
     public N8nExecutionContext(
             Long publicationId,
             String destination,
@@ -24,7 +27,9 @@ public class N8nExecutionContext {
             Instant scheduledAt,
             String siteUrl,
             String username,
-            String credential) {
+            String credential,
+            String authorUrn,
+            String apiVersion) {
 
         this.publicationId =
                 publicationId;
@@ -49,6 +54,12 @@ public class N8nExecutionContext {
 
         this.credential =
                 credential;
+
+        this.authorUrn =
+                authorUrn;
+
+        this.apiVersion =
+                apiVersion;
     }
 
     public Long getPublicationId() {
@@ -81,5 +92,13 @@ public class N8nExecutionContext {
 
     public String getCredential() {
         return credential;
+    }
+
+    public String getAuthorUrn() {
+        return authorUrn;
+    }
+
+    public String getApiVersion() {
+        return apiVersion;
     }
 }

@@ -14,11 +14,16 @@ import com.smaservices.publication_api.exception.ApiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import com.smaservices.publication_api.entity.enums.PublicationStatus;
+import org.springframework.beans.factory.annotation.Value;
+
+import java.time.Instant;
 
 @Service
 public class N8nExecutionContextService {
 
     private final PublicationRepository publicationRepository;
+
+    private final String linkedInApiVersion;
 
     private final ThirdPartyAccountRepository
             thirdPartyAccountRepository;
@@ -28,7 +33,9 @@ public class N8nExecutionContextService {
     public N8nExecutionContextService(
             PublicationRepository publicationRepository,
             ThirdPartyAccountRepository thirdPartyAccountRepository,
-            EncryptionService encryptionService) {
+            EncryptionService encryptionService,
+            @Value("${app.linkedin.api-version}")
+            String linkedInApiVersion) {
 
         this.publicationRepository =
                 publicationRepository;
@@ -38,6 +45,9 @@ public class N8nExecutionContextService {
 
         this.encryptionService =
                 encryptionService;
+
+        this.linkedInApiVersion =
+                linkedInApiVersion;
     }
 
     @Transactional(readOnly = true)
@@ -102,14 +112,101 @@ public class N8nExecutionContextService {
                     );
 
             case LINKEDIN ->
-                    throw new ApiException(
-                            HttpStatus.NOT_IMPLEMENTED,
-                            "LINKEDIN_NOT_IMPLEMENTED",
-                            "L'intégration LinkedIn n'est pas encore configurée."
+                    createLinkedInContext(
+                            publication,
+                            userId
                     );
         };
     }
+    private N8nExecutionContext createLinkedInContext(
+            Publication publication,
+            Long userId) {
 
+        ThirdPartyAccount account =
+                thirdPartyAccountRepository
+                        .findByUserIdAndType(
+                                userId,
+                                ThirdPartyType.LINKEDIN
+                        )
+                        .orElseThrow(
+                                () -> new ApiException(
+                                        HttpStatus.CONFLICT,
+                                        "LINKEDIN_ACCOUNT_NOT_CONNECTED",
+                                        "Aucun compte LinkedIn connecté."
+                                )
+                        );
+
+        if (account.getStatus()
+                != AccountStatus.CONNECTED) {
+
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "LINKEDIN_ACCOUNT_INACTIVE",
+                    "Le compte LinkedIn n'est pas actif."
+            );
+        }
+
+        if (account.getAccessTokenExpiresAt() != null
+                && !account
+                .getAccessTokenExpiresAt()
+                .isAfter(Instant.now())) {
+
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "LINKEDIN_TOKEN_EXPIRED",
+                    "Le jeton LinkedIn a expiré. Reconnectez le compte."
+            );
+        }
+
+        String memberId =
+                account.getExternalAccountId();
+
+        if (memberId == null
+                || memberId.isBlank()) {
+
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "LINKEDIN_MEMBER_ID_MISSING",
+                    "L'identifiant du compte LinkedIn est absent."
+            );
+        }
+
+        String accessToken =
+                encryptionService.decrypt(
+                        account.getAccessTokenEnc()
+                );
+
+        String authorUrn =
+                "urn:li:person:"
+                        + memberId;
+
+        return new N8nExecutionContext(
+                publication.getId(),
+
+                publication
+                        .getDestination()
+                        .name(),
+
+                publication
+                        .getContent()
+                        .getTitle(),
+
+                publication
+                        .getContent()
+                        .getBody(),
+
+                publication.getScheduledAt(),
+
+                null,
+                null,
+
+                accessToken,
+
+                authorUrn,
+
+                linkedInApiVersion
+        );
+    }
     private N8nExecutionContext createWordPressContext(
             Publication publication,
             Long userId) {
@@ -181,8 +278,9 @@ public class N8nExecutionContextService {
                 account.getSiteUrl(),
 
                 username,
-
-                appPassword
+                appPassword,
+                null,
+                null
         );
     }
 }
