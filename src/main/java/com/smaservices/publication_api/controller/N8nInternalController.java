@@ -3,6 +3,7 @@ package com.smaservices.publication_api.controller;
 import com.smaservices.publication_api.dto.MessageResponse;
 import com.smaservices.publication_api.dto.n8n.N8nExecutionContext;
 import com.smaservices.publication_api.service.N8nExecutionContextService;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
+@Hidden
 @RestController
 @RequestMapping("/api/n8n/internal")
 public class N8nInternalController {

@@ -10,10 +10,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Hidden;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
+@Hidden
 @RestController
 @RequestMapping("/api/n8n")
 public class N8nCallbackController {

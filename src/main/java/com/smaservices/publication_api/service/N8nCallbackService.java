@@ -157,6 +157,42 @@ public class N8nCallbackService {
         PublicationStatus current =
                 publication.getStatus();
 
+        boolean allowed =
+                switch (current) {
+
+                    case PENDING, SCHEDULED ->
+                            requestedStatus ==
+                                    PublicationStatus.PROCESSING
+                                    ||
+                                    requestedStatus ==
+                                            PublicationStatus.FAILED;
+
+                    case PROCESSING ->
+                            requestedStatus ==
+                                    PublicationStatus.PROCESSING
+                                    ||
+                                    requestedStatus ==
+                                            PublicationStatus.PUBLISHED
+                                    ||
+                                    requestedStatus ==
+                                            PublicationStatus.FAILED;
+
+                    case PUBLISHED ->
+                            requestedStatus ==
+                                    PublicationStatus.PUBLISHED;
+
+                    case FAILED ->
+                            requestedStatus ==
+                                    PublicationStatus.FAILED;
+
+                    case CANCELLED ->
+                            false;
+                };
+
+        if (allowed) {
+            return;
+        }
+
         if (current ==
                 PublicationStatus.CANCELLED) {
 
@@ -166,14 +202,27 @@ public class N8nCallbackService {
         }
 
         if (current ==
-                PublicationStatus.PUBLISHED
-                &&
-                requestedStatus !=
-                        PublicationStatus.PUBLISHED) {
+                PublicationStatus.PUBLISHED) {
 
             throw new IllegalStateException(
                     "Une publication déjà publiée ne peut pas changer de statut."
             );
         }
+
+        if (current ==
+                PublicationStatus.FAILED) {
+
+            throw new IllegalStateException(
+                    "Une publication en échec ne peut plus changer de statut."
+            );
+        }
+
+        throw new IllegalStateException(
+                "Transition de publication invalide : "
+                        + current
+                        + " -> "
+                        + requestedStatus
+                        + "."
+        );
     }
 }

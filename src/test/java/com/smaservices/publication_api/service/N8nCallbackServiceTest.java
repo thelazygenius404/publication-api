@@ -479,4 +479,84 @@ class N8nCallbackServiceTest {
 
         return publication;
     }
+
+    @Test
+    void handle_shouldRejectRecoveryFromFailedToPublished() {
+
+        Publication publication =
+                publication(
+                        PublicationStatus.FAILED
+                );
+
+        when(
+                publicationRepository.findById(10L)
+        ).thenReturn(
+                Optional.of(publication)
+        );
+
+        N8nCallbackRequest request =
+                request(
+                        PublicationStatus.PUBLISHED
+                );
+
+        IllegalStateException exception =
+                assertThrows(
+                        IllegalStateException.class,
+                        () ->
+                                callbackService.handle(
+                                        request
+                                )
+                );
+
+        assertEquals(
+                "Une publication en échec ne peut plus changer de statut.",
+                exception.getMessage()
+        );
+
+        verify(
+                publicationRepository,
+                never()
+        ).save(any());
+
+        verifyNoInteractions(
+                auditService
+        );
+    }
+
+    @Test
+    void handle_shouldRejectDirectPendingToPublished() {
+
+        Publication publication =
+                publication(
+                        PublicationStatus.PENDING
+                );
+
+        when(
+                publicationRepository.findById(10L)
+        ).thenReturn(
+                Optional.of(publication)
+        );
+
+        N8nCallbackRequest request =
+                request(
+                        PublicationStatus.PUBLISHED
+                );
+
+        assertThrows(
+                IllegalStateException.class,
+                () ->
+                        callbackService.handle(
+                                request
+                        )
+        );
+
+        verify(
+                publicationRepository,
+                never()
+        ).save(any());
+
+        verifyNoInteractions(
+                auditService
+        );
+    }
 }

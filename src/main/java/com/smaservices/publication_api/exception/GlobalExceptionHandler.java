@@ -8,12 +8,19 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(
+                    GlobalExceptionHandler.class
+            );
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiErrorResponse> handleApiException(
@@ -125,6 +132,13 @@ public class GlobalExceptionHandler {
     handleUnexpectedException(
             Exception exception,
             HttpServletRequest request) {
+
+        LOGGER.error(
+                "Unhandled exception on {} {}",
+                request.getMethod(),
+                request.getRequestURI(),
+                exception
+        );
 
         ApiErrorResponse response =
                 new ApiErrorResponse(
