@@ -7,9 +7,16 @@ import com.smaservices.publication_api.service.AiContentService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/ai")
+@Tag(
+        name = "AI",
+        description = "Génération et amélioration de contenu avec Gemini"
+)
+@SecurityRequirement(name = "bearerAuth")
 public class AiController {
 
     private final AiContentService aiContentService;

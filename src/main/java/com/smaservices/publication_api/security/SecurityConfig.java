@@ -49,7 +49,11 @@ public class SecurityConfig {
                                 "/error",
                                 "/api/n8n/callback",
                                 "/api/n8n/internal/**",
-                                "/api/accounts/linkedin/callback"
+                                "/api/accounts/linkedin/callback",
+
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

@@ -3,6 +3,8 @@ package com.smaservices.publication_api.controller;
 import com.smaservices.publication_api.dto.publication.PublicationCreateRequest;
 import com.smaservices.publication_api.dto.publication.PublicationResponse;
 import com.smaservices.publication_api.service.PublicationService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +15,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/publications")
+@Tag(name = "Publications")
+@SecurityRequirement(name = "bearerAuth")
 public class PublicationManagementController {
 
     private final PublicationService publicationService;
