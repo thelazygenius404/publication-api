@@ -277,6 +277,15 @@ class N8nExecutionContextServiceTest {
         verifyNoInteractions(
                 encryptionService
         );
+
+        assertEquals(
+                AccountStatus.EXPIRED,
+                account.getStatus()
+        );
+
+        verify(
+                accountRepository
+        ).save(account);
     }
 
     @Test

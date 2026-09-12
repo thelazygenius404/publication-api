@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import com.smaservices.publication_api.dto.linkedin.LinkedInAuthorizationUrlResponse;
 import com.smaservices.publication_api.dto.linkedin.LinkedInConnectionResponse;
+import com.smaservices.publication_api.dto.MessageResponse;
+import com.smaservices.publication_api.dto.account.ThirdPartyAccountsResponse;
 
 @RestController
 @RequestMapping("/api/accounts")
@@ -86,6 +88,50 @@ public class ThirdPartyAccountController {
                         code,
                         state,
                         error
+                )
+        );
+    }
+
+    @GetMapping
+    public ResponseEntity<ThirdPartyAccountsResponse>
+    getAccounts(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                accountService.getAccountsStatus(
+                        authentication.getName()
+                )
+        );
+    }
+
+    @DeleteMapping("/wordpress")
+    public ResponseEntity<MessageResponse>
+    disconnectWordPress(
+            Authentication authentication) {
+
+        accountService.disconnectWordPressAccount(
+                authentication.getName()
+        );
+
+        return ResponseEntity.ok(
+                new MessageResponse(
+                        "Compte WordPress déconnecté."
+                )
+        );
+    }
+
+    @DeleteMapping("/linkedin")
+    public ResponseEntity<MessageResponse>
+    disconnectLinkedIn(
+            Authentication authentication) {
+
+        accountService.disconnectLinkedInAccount(
+                authentication.getName()
+        );
+
+        return ResponseEntity.ok(
+                new MessageResponse(
+                        "Compte LinkedIn déconnecté."
                 )
         );
     }

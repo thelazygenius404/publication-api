@@ -50,7 +50,7 @@ public class N8nExecutionContextService {
                 linkedInApiVersion;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public N8nExecutionContext getContext(
             Long publicationId) {
 
@@ -94,6 +94,7 @@ public class N8nExecutionContextService {
                     "La publication est en échec."
             );
         }
+
         Long userId =
                 publication
                         .getContent()
@@ -150,6 +151,14 @@ public class N8nExecutionContextService {
                 && !account
                 .getAccessTokenExpiresAt()
                 .isAfter(Instant.now())) {
+
+            account.setStatus(
+                    AccountStatus.EXPIRED
+            );
+
+            thirdPartyAccountRepository.save(
+                    account
+            );
 
             throw new ApiException(
                     HttpStatus.CONFLICT,

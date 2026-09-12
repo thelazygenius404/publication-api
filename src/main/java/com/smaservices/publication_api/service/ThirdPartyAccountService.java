@@ -9,6 +9,12 @@ import com.smaservices.publication_api.repository.UserRepository;
 import com.smaservices.publication_api.security.EncryptionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.smaservices.publication_api.dto.account.AccountConnectionState;
+import com.smaservices.publication_api.dto.account.AccountProviderStatusResponse;
+import com.smaservices.publication_api.dto.account.ThirdPartyAccountsResponse;
+
+import java.time.Instant;
+import java.util.Optional;
 
 @Service
 public class ThirdPartyAccountService {
@@ -191,6 +197,139 @@ public class ThirdPartyAccountService {
         return normalized.replaceAll(
                 "/+$",
                 ""
+        );
+    }
+
+    @Transactional
+    public ThirdPartyAccountsResponse getAccountsStatus(
+            String userEmail) {
+
+        User user =
+                userRepository
+                        .findByEmail(userEmail)
+                        .orElseThrow(
+                                () -> new IllegalArgumentException(
+                                        "Utilisateur non trouvé."
+                                )
+                        );
+
+        Optional<ThirdPartyAccount> wordpress =
+                accountRepository
+                        .findByUserIdAndType(
+                                user.getId(),
+                                ThirdPartyType.WORDPRESS
+                        );
+
+        Optional<ThirdPartyAccount> linkedin =
+                accountRepository
+                        .findByUserIdAndType(
+                                user.getId(),
+                                ThirdPartyType.LINKEDIN
+                        );
+
+        linkedin.ifPresent(
+                this::refreshLinkedInExpiry
+        );
+
+        return new ThirdPartyAccountsResponse(
+                toStatus(
+                        wordpress,
+                        ThirdPartyType.WORDPRESS
+                ),
+                toStatus(
+                        linkedin,
+                        ThirdPartyType.LINKEDIN
+                )
+        );
+    }
+
+    @Transactional
+    public void disconnectLinkedInAccount(
+            String userEmail) {
+
+        User user =
+                userRepository
+                        .findByEmail(userEmail)
+                        .orElseThrow(
+                                () -> new IllegalArgumentException(
+                                        "Utilisateur non trouvé."
+                                )
+                        );
+
+        accountRepository
+                .findByUserIdAndType(
+                        user.getId(),
+                        ThirdPartyType.LINKEDIN
+                )
+                .ifPresent(
+                        accountRepository::delete
+                );
+    }
+
+    private void refreshLinkedInExpiry(
+            ThirdPartyAccount account) {
+
+        if (account.getStatus()
+                != AccountStatus.CONNECTED) {
+
+            return;
+        }
+
+        Instant expiresAt =
+                account.getAccessTokenExpiresAt();
+
+        if (expiresAt != null
+                && !expiresAt.isAfter(
+                Instant.now()
+        )) {
+
+            account.setStatus(
+                    AccountStatus.EXPIRED
+            );
+
+            accountRepository.save(
+                    account
+            );
+        }
+    }
+
+    private AccountProviderStatusResponse toStatus(
+            Optional<ThirdPartyAccount> optionalAccount,
+            ThirdPartyType type) {
+
+        if (optionalAccount.isEmpty()) {
+
+            return new AccountProviderStatusResponse(
+                    false,
+                    AccountConnectionState.NOT_CONNECTED,
+                    null,
+                    null
+            );
+        }
+
+        ThirdPartyAccount account =
+                optionalAccount.get();
+
+        boolean expired =
+                account.getStatus()
+                        == AccountStatus.EXPIRED;
+
+        AccountConnectionState status =
+                expired
+                        ? AccountConnectionState.EXPIRED
+                        : AccountConnectionState.CONNECTED;
+
+        return new AccountProviderStatusResponse(
+                !expired,
+                status,
+
+                type == ThirdPartyType.WORDPRESS
+                        ? account.getSiteUrl()
+                        : null,
+
+                type == ThirdPartyType.LINKEDIN
+                        ? account.getAccessTokenExpiresAt()
+                        : null
         );
     }
 }
