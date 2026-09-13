@@ -155,7 +155,7 @@
       "typeVersion": 2,
       "position": [
         784,
-        480
+        496
       ],
       "notes": "LinkedIn is intentionally marked FAILED until the Spring Boot LinkedIn execution context/OAuth implementation is added."
     },
@@ -248,7 +248,7 @@
       "typeVersion": 2,
       "position": [
         784,
-        288
+        304
       ]
     },
     {
@@ -279,7 +279,7 @@
       "typeVersion": 4.2,
       "position": [
         -112,
-        48
+        16
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -301,7 +301,7 @@
       "typeVersion": 2,
       "position": [
         336,
-        -48
+        -80
       ]
     },
     {
@@ -334,7 +334,7 @@
       "typeVersion": 4.2,
       "position": [
         560,
-        -48
+        -80
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -351,7 +351,7 @@
       "typeVersion": 2,
       "position": [
         784,
-        -48
+        -80
       ]
     },
     {
@@ -382,7 +382,7 @@
       "typeVersion": 4.2,
       "position": [
         1008,
-        288
+        208
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -454,7 +454,7 @@
           "conditions": [
             {
               "id": "55baa10a-4071-468b-a23b-b0920c2323d7",
-              "leftValue": "=={{ $('10. Check Execution Context').first().json.destination }}",
+              "leftValue": "={{ $('4. Normalize Job').first().json.destination }}",
               "rightValue": "WORDPRESS",
               "operator": {
                 "type": "string",
@@ -471,7 +471,7 @@
       "typeVersion": 2.3,
       "position": [
         112,
-        48
+        16
       ],
       "id": "6d950640-b034-4e6e-bee2-9f2e1ef74254",
       "name": "13. WordPress?"
@@ -484,7 +484,7 @@
       "typeVersion": 2,
       "position": [
         336,
-        144
+        112
       ],
       "id": "675fa7ac-f009-4ea5-90b5-0d85a7bc6269",
       "name": "13L. Prepare LinkedIn Request"
@@ -531,7 +531,7 @@
       "typeVersion": 4.5,
       "position": [
         560,
-        144
+        112
       ],
       "id": "d8d97281-53ba-4f75-8750-5ef5554e75ab",
       "name": "14L. Publish LinkedIn",
@@ -547,7 +547,7 @@
       "typeVersion": 2,
       "position": [
         784,
-        144
+        112
       ],
       "id": "adcfcd27-2c2a-4927-a751-35342648fc00",
       "name": "15L. Build LinkedIn Result"
@@ -816,7 +816,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "36566978-3d50-4389-9e88-6c449d1c94e3",
+  "versionId": "5934ca61-c6fa-43f3-aa8a-574cfecbcc97",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "8d40fdfe780680239960f0dbdfb6360283dbf9967081519544b693ad3aa13807"
