@@ -1,7 +1,9 @@
 package com.smaservices.publication_api.security;
 
+import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -15,54 +17,79 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+
     private final AuthenticationProvider authenticationProvider;
-    private final String allowedOrigin;
+
+    private final List<String> allowedOrigins;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthFilter,
             AuthenticationProvider authenticationProvider,
-            @Value("${app.cors.allowed-origin}")
-            String allowedOrigin) {
+            @Value("${app.cors.allowed-origins}")
+            String allowedOrigins) {
 
-        this.jwtAuthFilter = jwtAuthFilter;
-        this.authenticationProvider = authenticationProvider;
-        this.allowedOrigin = allowedOrigin;
+        this.jwtAuthFilter =
+                jwtAuthFilter;
+
+        this.authenticationProvider =
+                authenticationProvider;
+
+        this.allowedOrigins =
+                Arrays.stream(
+                                allowedOrigins.split(",")
+                        )
+                        .map(String::trim)
+                        .filter(
+                                origin ->
+                                        !origin.isBlank()
+                        )
+                        .toList();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
+            HttpSecurity http)
+            throws Exception {
 
         http
-                .cors(Customizer.withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/auth/**",
-                                "/error",
-                                "/api/n8n/callback",
-                                "/api/n8n/internal/**",
-                                "/api/accounts/linkedin/callback",
+                .cors(
+                        Customizer.withDefaults()
+                )
+                .csrf(
+                        AbstractHttpConfigurer::disable
+                )
+                .authorizeHttpRequests(
+                        auth ->
+                                auth.requestMatchers(
+                                                "/auth/**",
+                                                "/error",
+                                                "/api/n8n/callback",
+                                                "/api/n8n/internal/**",
+                                                "/api/accounts/linkedin/callback",
 
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
+                                                "/swagger-ui.html",
+                                                "/swagger-ui/**",
+                                                "/v3/api-docs/**"
+                                        )
+                                        .permitAll()
+                                        .anyRequest()
+                                        .authenticated()
                 )
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS
-                        )
+                .sessionManagement(
+                        session ->
+                                session.sessionCreationPolicy(
+                                        SessionCreationPolicy.STATELESS
+                                )
                 )
-                .authenticationProvider(authenticationProvider)
+                .authenticationProvider(
+                        authenticationProvider
+                )
                 .addFilterBefore(
                         jwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -78,7 +105,7 @@ public class SecurityConfig {
                 new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-                List.of(allowedOrigin)
+                allowedOrigins
         );
 
         configuration.setAllowedMethods(
