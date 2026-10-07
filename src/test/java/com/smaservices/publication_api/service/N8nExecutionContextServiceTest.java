@@ -48,7 +48,8 @@ class N8nExecutionContextServiceTest {
                         publicationRepository,
                         accountRepository,
                         encryptionService,
-                        "202608"
+                        "202608",
+                        "http://host.docker.internal:8080"
                 );
     }
 

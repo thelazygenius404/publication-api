@@ -15,7 +15,7 @@
       "typeVersion": 2.1,
       "position": [
         -2352,
-        16
+        208
       ],
       "webhookId": "2923b76c-b0e8-4410-a975-736dc45a6014",
       "credentials": {
@@ -35,7 +35,7 @@
       "typeVersion": 2,
       "position": [
         -2128,
-        16
+        208
       ]
     },
     {
@@ -60,7 +60,7 @@
       "typeVersion": 1.5,
       "position": [
         -1904,
-        16
+        208
       ]
     },
     {
@@ -94,7 +94,7 @@
       "typeVersion": 2.2,
       "position": [
         -1680,
-        16
+        208
       ]
     },
     {
@@ -108,42 +108,9 @@
       "typeVersion": 1.1,
       "position": [
         -1456,
-        -48
+        144
       ],
       "webhookId": "57ab69e0-b34c-41c3-8d09-5e104d3e9968"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "cf205256-267e-47f5-9161-a2537ab5d9af",
-              "leftValue": "={{ $json.destination }}",
-              "rightValue": "WORDPRESS",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "46166017-ae53-4138-9051-7f7521aa2de7",
-      "name": "8. WordPress?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        -1232,
-        16
-      ]
     },
     {
       "parameters": {
@@ -154,8 +121,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        784,
-        496
+        1680,
+        864
       ],
       "notes": "LinkedIn is intentionally marked FAILED until the Spring Boot LinkedIn execution context/OAuth implementation is added."
     },
@@ -177,8 +144,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -1008,
-        16
+        -1232,
+        208
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -200,8 +167,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -784,
-        16
+        -1008,
+        208
       ]
     },
     {
@@ -234,8 +201,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -336,
-        112
+        -560,
+        304
       ]
     },
     {
@@ -247,8 +214,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        784,
-        304
+        1680,
+        672
       ]
     },
     {
@@ -278,8 +245,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -112,
-        16
+        -336,
+        208
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -293,7 +260,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $('10. Check Execution Context').first().json;\nconst context = data.context;\n\nif (!context) {\n  throw new Error('WordPress context is missing');\n}\n\nconst raw = `${context.username}:${context.credential}`;\nconst authorization = `Basic ${Buffer.from(raw, 'utf8').toString('base64')}`;\n\nreturn [{\n  json: {\n    publicationId: data.publicationId,\n    callbackUrl: data.callbackUrl,\n    siteUrl: context.siteUrl.replace(/\\/+$/, ''),\n    title: context.title,\n    body: context.body,\n    authorization\n  }\n}];"
+        "jsCode": "const data =\n  $('10. Check Execution Context')\n    .first()\n    .json;\n\nconst context =\n  data.context;\n\nif (!context) {\n  throw new Error(\n    'WordPress context is missing'\n  );\n}\n\nconst raw =\n  `${context.username}:${context.credential}`;\n\nconst authorization =\n  `Basic ${Buffer\n    .from(raw, 'utf8')\n    .toString('base64')}`;\n\nreturn [\n  {\n    json: {\n      publicationId:\n        data.publicationId,\n\n      callbackUrl:\n        data.callbackUrl,\n\n      siteUrl:\n        context.siteUrl\n          .replace(/\\/+$/, ''),\n\n      title:\n        context.title,\n\n      body:\n        context.body,\n\n      authorization,\n\n      hasMedia:\n        Boolean(\n          context.mediaId &&\n          context.mediaDownloadUrl\n        ),\n\n      mediaId:\n        context.mediaId ?? null,\n\n      mediaDownloadUrl:\n        context.mediaDownloadUrl ?? null,\n\n      mediaContentType:\n        context.mediaContentType ?? null,\n\n      mediaOriginalFilename:\n        context.mediaOriginalFilename ??\n        'image',\n\n      mediaAltText:\n        context.mediaAltText ?? ''\n    }\n  }\n];"
       },
       "id": "4f6602b5-b124-49d3-9914-11801e696b25",
       "name": "13. Prepare WordPress Request",
@@ -301,7 +268,7 @@
       "typeVersion": 2,
       "position": [
         336,
-        -80
+        16
       ]
     },
     {
@@ -323,7 +290,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ title: $json.title, content: $json.body, status: 'publish' }) }}",
+        "jsonBody": "={{\n  JSON.stringify({\n    title: $json.title,\n    content: $json.body,\n    status: 'publish',\n    ...(\n      $json.featuredMedia\n        ? {\n            featured_media:\n              $json.featuredMedia\n          }\n        : {}\n    )\n  })\n}}",
         "options": {
           "timeout": 30000
         }
@@ -333,8 +300,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        560,
-        -80
+        1456,
+        16
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -350,8 +317,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        784,
-        -80
+        1680,
+        16
       ]
     },
     {
@@ -381,8 +348,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1008,
-        208
+        1904,
+        496
       ],
       "retryOnFail": true,
       "maxTries": 3,
@@ -423,8 +390,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -560,
-        16
+        -784,
+        208
       ],
       "id": "9f7865cd-be63-428c-b75a-96b0b01039ec",
       "name": "11. Stop Cleanly?"
@@ -436,8 +403,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -336,
-        -80
+        -560,
+        112
       ],
       "id": "38274d7e-b66e-4057-82f0-30137174a5d6",
       "name": "11A. Stop Cleanly"
@@ -470,21 +437,21 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        112,
-        16
+        -112,
+        208
       ],
       "id": "6d950640-b034-4e6e-bee2-9f2e1ef74254",
       "name": "13. WordPress?"
     },
     {
       "parameters": {
-        "jsCode": "const data =\n  $('10. Check Execution Context')\n    .first()\n    .json;\n\nconst context =\n  data.context;\n\nif (!context) {\n  throw new Error(\n    'LinkedIn context is missing'\n  );\n}\n\nif (!context.credential) {\n  throw new Error(\n    'LinkedIn access token is missing'\n  );\n}\n\nif (!context.authorUrn) {\n  throw new Error(\n    'LinkedIn author URN is missing'\n  );\n}\n\nif (!context.apiVersion) {\n  throw new Error(\n    'LinkedIn API version is missing'\n  );\n}\n\nconst commentary =\n  [\n    context.title,\n    context.body\n  ]\n    .filter(value =>\n      value &&\n      String(value).trim()\n    )\n    .map(value =>\n      String(value).trim()\n    )\n    .join('\\n\\n');\n\nif (!commentary) {\n  throw new Error(\n    'LinkedIn commentary is empty'\n  );\n}\n\nreturn [\n  {\n    json: {\n      publicationId:\n        data.publicationId,\n\n      callbackUrl:\n        data.callbackUrl,\n\n      authorization:\n        `Bearer ${context.credential}`,\n\n      apiVersion:\n        context.apiVersion,\n\n      body: {\n        author:\n          context.authorUrn,\n\n        commentary,\n\n        visibility:\n          'PUBLIC',\n\n        distribution: {\n          feedDistribution:\n            'MAIN_FEED',\n\n          targetEntities: [],\n\n          thirdPartyDistributionChannels: []\n        },\n\n        lifecycleState:\n          'PUBLISHED',\n\n        isReshareDisabledByAuthor:\n          false\n      }\n    }\n  }\n];"
+        "jsCode": "const data =\n  $('10. Check Execution Context')\n    .first()\n    .json;\n\nconst context =\n  data.context;\n\nif (!context) {\n  throw new Error(\n    'LinkedIn context is missing'\n  );\n}\n\nif (!context.credential) {\n  throw new Error(\n    'LinkedIn access token is missing'\n  );\n}\n\nif (!context.authorUrn) {\n  throw new Error(\n    'LinkedIn author URN is missing'\n  );\n}\n\nif (!context.apiVersion) {\n  throw new Error(\n    'LinkedIn API version is missing'\n  );\n}\n\nconst commentary =\n  [\n    context.title,\n    context.body\n  ]\n    .filter(value =>\n      value &&\n      String(value).trim()\n    )\n    .map(value =>\n      String(value).trim()\n    )\n    .join('\\n\\n');\n\nif (!commentary) {\n  throw new Error(\n    'LinkedIn commentary is empty'\n  );\n}\n\nconst hasMedia =\n  Boolean(\n    context.mediaId &&\n    context.mediaDownloadUrl\n  );\n\nif (\n  hasMedia &&\n  ![\n    'image/jpeg',\n    'image/png'\n  ].includes(\n    context.mediaContentType\n  )\n) {\n  throw new Error(\n    'LinkedIn media must be JPEG or PNG'\n  );\n}\n\nreturn [\n  {\n    json: {\n      publicationId:\n        data.publicationId,\n\n      callbackUrl:\n        data.callbackUrl,\n\n      authorization:\n        `Bearer ${context.credential}`,\n\n      accessToken:\n        context.credential,\n\n      apiVersion:\n        context.apiVersion,\n\n      authorUrn:\n        context.authorUrn,\n\n      commentary,\n\n      hasMedia,\n\n      mediaId:\n        context.mediaId ?? null,\n\n      mediaDownloadUrl:\n        context.mediaDownloadUrl ?? null,\n\n      mediaContentType:\n        context.mediaContentType ?? null,\n\n      mediaOriginalFilename:\n        context.mediaOriginalFilename ?? 'image',\n\n      mediaAltText:\n        context.mediaAltText ?? ''\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        336,
-        112
+        112,
+        400
       ],
       "id": "675fa7ac-f009-4ea5-90b5-0d85a7bc6269",
       "name": "13L. Prepare LinkedIn Request"
@@ -506,7 +473,7 @@
             },
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $('10. Check Execution Context').first().json.context.credential.trim() }}"
+              "value": "={{\n  $('13L. Prepare LinkedIn Request')\n    .first()\n    .json\n    .authorization\n}}"
             },
             {
               "name": "Linkedin-Version",
@@ -516,7 +483,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($('13L. Prepare LinkedIn Request').first().json.body) }}",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
         "options": {
           "response": {
             "response": {
@@ -530,8 +497,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        560,
-        112
+        1456,
+        400
       ],
       "id": "d8d97281-53ba-4f75-8750-5ef5554e75ab",
       "name": "14L. Publish LinkedIn",
@@ -546,11 +513,292 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        784,
-        112
+        1680,
+        400
       ],
       "id": "adcfcd27-2c2a-4927-a751-35342648fc00",
       "name": "15L. Build LinkedIn Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "56f6c4ac-b01d-4c95-ac78-d21d6176949c",
+              "leftValue": "={{ $json.hasMedia }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        560,
+        16
+      ],
+      "id": "ef4e5c6b-8c9c-42e5-b097-34cf39108b7b",
+      "name": "14. Has WordPress Media?"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('13. Prepare WordPress Request').first().json.mediaDownloadUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        784,
+        -80
+      ],
+      "id": "bc4b99ac-e9a3-409a-b4f6-5b4966da6dff",
+      "name": "14A. Download Media",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "iWam9k4DtdwyCfPE",
+          "name": "Publication API Shared Secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('13. Prepare WordPress Request').first().json.siteUrl + '/wp-json/wp/v2/media' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('13. Prepare WordPress Request').first().json.authorization }}"
+            },
+            {
+              "name": "Content-Disposition",
+              "value": "={{ 'attachment; filename=\"' + $('13. Prepare WordPress Request').first().json.mediaOriginalFilename + '\"' }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "={{ $('13. Prepare WordPress Request').first().json.mediaContentType }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1008,
+        -80
+      ],
+      "id": "d749fb6f-5f31-4886-a86a-cda78e891ac6",
+      "name": "14B. Upload Media to WordPress"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared =\n  $('13. Prepare WordPress Request')\n    .first()\n    .json;\n\nconst upload =\n  $json;\n\nif (!upload?.id) {\n  throw new Error(\n    'WordPress media upload did not return a media ID'\n  );\n}\n\nreturn [\n  {\n    json: {\n      publicationId:\n        prepared.publicationId,\n\n      callbackUrl:\n        prepared.callbackUrl,\n\n      siteUrl:\n        prepared.siteUrl,\n\n      authorization:\n        prepared.authorization,\n\n      title:\n        prepared.title,\n\n      body:\n        prepared.body,\n\n      featuredMedia:\n        Number(upload.id)\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        -80
+      ],
+      "id": "afbb278e-fe84-4796-868b-2080356dc186",
+      "name": "14C. Prepare WP Post With Media"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $json;\n\nreturn [\n  {\n    json: {\n      publicationId:\n        prepared.publicationId,\n\n      callbackUrl:\n        prepared.callbackUrl,\n\n      siteUrl:\n        prepared.siteUrl,\n\n      authorization:\n        prepared.authorization,\n\n      title:\n        prepared.title,\n\n      body:\n        prepared.body,\n\n      featuredMedia:\n        null\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        112
+      ],
+      "id": "ac25c1db-460e-46d4-9769-2d2345402dba",
+      "name": "14D. Prepare WP Post Without Media"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ee7d25fa-c4c1-4861-bd2b-e55e88bedfa9",
+              "leftValue": "={{ $json.hasMedia }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        336,
+        400
+      ],
+      "id": "5c1da99b-73cc-4b0d-a2dd-3bd94a5a1277",
+      "name": "14L. Has LinkedIn Media?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/images?action=initializeUpload",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ $('13L. Prepare LinkedIn Request').first().json.authorization }}"
+            },
+            {
+              "name": "Linkedin-Version",
+              "value": "={{ $('13L. Prepare LinkedIn Request').first().json.apiVersion }}"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  JSON.stringify({\n    initializeUploadRequest: {\n      owner:\n        $('13L. Prepare LinkedIn Request')\n          .first()\n          .json\n          .authorUrn\n    }\n  })\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        560,
+        304
+      ],
+      "id": "7fada338-945b-4ec6-bbb6-71eb0a873d34",
+      "name": "14LA. Initialize LinkedIn Image"
+    },
+    {
+      "parameters": {
+        "url": "={{   $('13L. Prepare LinkedIn Request')     .first()     .json     .mediaDownloadUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        784,
+        304
+      ],
+      "id": "253fd95e-892f-4313-bfda-7f1f117b820c",
+      "name": "14LB. Download LinkedIn Media",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "iWam9k4DtdwyCfPE",
+          "name": "Publication API Shared Secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{   $('14LA. Initialize LinkedIn Image')     .first()     .json     .value     .uploadUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{   $('13L. Prepare LinkedIn Request')     .first()     .json     .authorization }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "={{   $('13L. Prepare LinkedIn Request')     .first()     .json     .mediaContentType }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1008,
+        304
+      ],
+      "id": "289e5a42-e0b9-4e6a-a1d0-fa69a8ff42f8",
+      "name": "14LC. Upload Image to LinkedIn"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared =\n  $('13L. Prepare LinkedIn Request')\n    .first()\n    .json;\n\nconst initialized =\n  $('14LA. Initialize LinkedIn Image')\n    .first()\n    .json;\n\nconst imageUrn =\n  initialized?.value?.image;\n\nif (!imageUrn) {\n  throw new Error(\n    'LinkedIn image initialization did not return an image URN'\n  );\n}\n\nconst media = {\n  id: imageUrn\n};\n\nif (\n  prepared.mediaAltText &&\n  prepared.mediaAltText.trim()\n) {\n  media.altText =\n    prepared.mediaAltText.trim();\n}\n\nreturn [\n  {\n    json: {\n      publicationId:\n        prepared.publicationId,\n\n      callbackUrl:\n        prepared.callbackUrl,\n\n      authorization:\n        prepared.authorization,\n\n      apiVersion:\n        prepared.apiVersion,\n\n      body: {\n        author:\n          prepared.authorUrn,\n\n        commentary:\n          prepared.commentary,\n\n        visibility:\n          'PUBLIC',\n\n        distribution: {\n          feedDistribution:\n            'MAIN_FEED',\n\n          targetEntities: [],\n\n          thirdPartyDistributionChannels: []\n        },\n\n        content: {\n          media\n        },\n\n        lifecycleState:\n          'PUBLISHED',\n\n        isReshareDisabledByAuthor:\n          false\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        304
+      ],
+      "id": "d574d633-409f-4de9-b259-fa85e26d20ff",
+      "name": "14LD. Prepare LinkedIn Post With Media"
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared =\n  $('13L. Prepare LinkedIn Request')\n    .first()\n    .json;\n\nreturn [\n  {\n    json: {\n      publicationId:\n        prepared.publicationId,\n\n      callbackUrl:\n        prepared.callbackUrl,\n\n      authorization:\n        prepared.authorization,\n\n      apiVersion:\n        prepared.apiVersion,\n\n      body: {\n        author:\n          prepared.authorUrn,\n\n        commentary:\n          prepared.commentary,\n\n        visibility:\n          'PUBLIC',\n\n        distribution: {\n          feedDistribution:\n            'MAIN_FEED',\n\n          targetEntities: [],\n\n          thirdPartyDistributionChannels: []\n        },\n\n        lifecycleState:\n          'PUBLISHED',\n\n        isReshareDisabledByAuthor:\n          false\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        496
+      ],
+      "id": "673a970b-ae70-4f41-9ae9-72771fae2c17",
+      "name": "14LE. Prepare LinkedIn Post Without Media"
     }
   ],
   "pinData": {},
@@ -599,7 +847,7 @@
         ],
         [
           {
-            "node": "8. WordPress?",
+            "node": "9. Get Execution Context",
             "type": "main",
             "index": 0
           }
@@ -608,24 +856,6 @@
     },
     "7. Wait Until scheduledAt": {
       "main": [
-        [
-          {
-            "node": "8. WordPress?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "8. WordPress?": {
-      "main": [
-        [
-          {
-            "node": "9. Get Execution Context",
-            "type": "main",
-            "index": 0
-          }
-        ],
         [
           {
             "node": "9. Get Execution Context",
@@ -712,7 +942,7 @@
       "main": [
         [
           {
-            "node": "14. Publish to WordPress",
+            "node": "14. Has WordPress Media?",
             "type": "main",
             "index": 0
           }
@@ -781,7 +1011,7 @@
       "main": [
         [
           {
-            "node": "14L. Publish LinkedIn",
+            "node": "14L. Has LinkedIn Media?",
             "type": "main",
             "index": 0
           }
@@ -809,6 +1039,141 @@
           }
         ]
       ]
+    },
+    "14. Has WordPress Media?": {
+      "main": [
+        [
+          {
+            "node": "14A. Download Media",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "14D. Prepare WP Post Without Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14A. Download Media": {
+      "main": [
+        [
+          {
+            "node": "14B. Upload Media to WordPress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14B. Upload Media to WordPress": {
+      "main": [
+        [
+          {
+            "node": "14C. Prepare WP Post With Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14C. Prepare WP Post With Media": {
+      "main": [
+        [
+          {
+            "node": "14. Publish to WordPress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14D. Prepare WP Post Without Media": {
+      "main": [
+        [
+          {
+            "node": "14. Publish to WordPress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14L. Has LinkedIn Media?": {
+      "main": [
+        [
+          {
+            "node": "14LA. Initialize LinkedIn Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "14LE. Prepare LinkedIn Post Without Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14LA. Initialize LinkedIn Image": {
+      "main": [
+        [
+          {
+            "node": "14LB. Download LinkedIn Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14LB. Download LinkedIn Media": {
+      "main": [
+        [
+          {
+            "node": "14LC. Upload Image to LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14LC. Upload Image to LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "14LD. Prepare LinkedIn Post With Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14LD. Prepare LinkedIn Post With Media": {
+      "main": [
+        [
+          {
+            "node": "14L. Publish LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "14LE. Prepare LinkedIn Post Without Media": {
+      "main": [
+        [
+          {
+            "node": "14L. Publish LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -816,7 +1181,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "5934ca61-c6fa-43f3-aa8a-574cfecbcc97",
+  "versionId": "d5337235-3f7c-406a-8693-7a0852a004b5",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "8d40fdfe780680239960f0dbdfb6360283dbf9967081519544b693ad3aa13807"

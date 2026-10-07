@@ -1,41 +1,53 @@
 package com.smaservices.publication_api.service;
 
 import com.smaservices.publication_api.dto.n8n.N8nExecutionContext;
+import com.smaservices.publication_api.entity.Content;
+import com.smaservices.publication_api.entity.ContentMedia;
 import com.smaservices.publication_api.entity.Publication;
 import com.smaservices.publication_api.entity.ThirdPartyAccount;
 import com.smaservices.publication_api.entity.enums.AccountStatus;
 import com.smaservices.publication_api.entity.enums.DestinationType;
+import com.smaservices.publication_api.entity.enums.PublicationStatus;
 import com.smaservices.publication_api.entity.enums.ThirdPartyType;
+import com.smaservices.publication_api.exception.ApiException;
 import com.smaservices.publication_api.repository.PublicationRepository;
 import com.smaservices.publication_api.repository.ThirdPartyAccountRepository;
 import com.smaservices.publication_api.security.EncryptionService;
-import org.springframework.stereotype.Service;
-import com.smaservices.publication_api.exception.ApiException;
-import org.springframework.http.HttpStatus;
-import org.springframework.transaction.annotation.Transactional;
-import com.smaservices.publication_api.entity.enums.PublicationStatus;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
 @Service
 public class N8nExecutionContextService {
 
-    private final PublicationRepository publicationRepository;
-
-    private final String linkedInApiVersion;
+    private final PublicationRepository
+            publicationRepository;
 
     private final ThirdPartyAccountRepository
             thirdPartyAccountRepository;
 
-    private final EncryptionService encryptionService;
+    private final EncryptionService
+            encryptionService;
+
+    private final String
+            linkedInApiVersion;
+
+    private final String
+            publicUrl;
 
     public N8nExecutionContextService(
             PublicationRepository publicationRepository,
             ThirdPartyAccountRepository thirdPartyAccountRepository,
             EncryptionService encryptionService,
+
             @Value("${app.linkedin.api-version}")
-            String linkedInApiVersion) {
+            String linkedInApiVersion,
+
+            @Value("${app.public-url}")
+            String publicUrl) {
 
         this.publicationRepository =
                 publicationRepository;
@@ -48,6 +60,12 @@ public class N8nExecutionContextService {
 
         this.linkedInApiVersion =
                 linkedInApiVersion;
+
+        this.publicUrl =
+                publicUrl.replaceAll(
+                        "/+$",
+                        ""
+                );
     }
 
     @Transactional
@@ -58,18 +76,21 @@ public class N8nExecutionContextService {
                 publicationRepository
                         .findById(publicationId)
                         .orElseThrow(
-                                () -> new ApiException(
-                                        HttpStatus.NOT_FOUND,
-                                        "PUBLICATION_NOT_FOUND",
-                                        "Publication introuvable."
-                                )
+                                () ->
+                                        new ApiException(
+                                                HttpStatus.NOT_FOUND,
+                                                "PUBLICATION_NOT_FOUND",
+                                                "Publication introuvable."
+                                        )
                         );
 
         PublicationStatus status =
                 publication.getStatus();
 
-        if (status == PublicationStatus.CANCELLED) {
-
+        if (
+                status ==
+                        PublicationStatus.CANCELLED
+        ) {
             throw new ApiException(
                     HttpStatus.CONFLICT,
                     "PUBLICATION_CANCELLED",
@@ -77,8 +98,10 @@ public class N8nExecutionContextService {
             );
         }
 
-        if (status == PublicationStatus.PUBLISHED) {
-
+        if (
+                status ==
+                        PublicationStatus.PUBLISHED
+        ) {
             throw new ApiException(
                     HttpStatus.CONFLICT,
                     "PUBLICATION_ALREADY_PUBLISHED",
@@ -86,8 +109,10 @@ public class N8nExecutionContextService {
             );
         }
 
-        if (status == PublicationStatus.FAILED) {
-
+        if (
+                status ==
+                        PublicationStatus.FAILED
+        ) {
             throw new ApiException(
                     HttpStatus.CONFLICT,
                     "PUBLICATION_FAILED",
@@ -102,9 +127,12 @@ public class N8nExecutionContextService {
                         .getId();
 
         DestinationType destination =
-                publication.getDestination();
+                publication
+                        .getDestination();
 
-        return switch (destination) {
+        return switch (
+                destination
+                ) {
 
             case WORDPRESS ->
                     createWordPressContext(
@@ -119,7 +147,9 @@ public class N8nExecutionContextService {
                     );
         };
     }
-    private N8nExecutionContext createLinkedInContext(
+
+    private N8nExecutionContext
+    createLinkedInContext(
             Publication publication,
             Long userId) {
 
@@ -130,16 +160,18 @@ public class N8nExecutionContextService {
                                 ThirdPartyType.LINKEDIN
                         )
                         .orElseThrow(
-                                () -> new ApiException(
-                                        HttpStatus.CONFLICT,
-                                        "LINKEDIN_ACCOUNT_NOT_CONNECTED",
-                                        "Aucun compte LinkedIn connecté."
-                                )
+                                () ->
+                                        new ApiException(
+                                                HttpStatus.CONFLICT,
+                                                "LINKEDIN_ACCOUNT_NOT_CONNECTED",
+                                                "Aucun compte LinkedIn connecté."
+                                        )
                         );
 
-        if (account.getStatus()
-                != AccountStatus.CONNECTED) {
-
+        if (
+                account.getStatus() !=
+                        AccountStatus.CONNECTED
+        ) {
             throw new ApiException(
                     HttpStatus.CONFLICT,
                     "LINKEDIN_ACCOUNT_INACTIVE",
@@ -147,18 +179,23 @@ public class N8nExecutionContextService {
             );
         }
 
-        if (account.getAccessTokenExpiresAt() != null
-                && !account
-                .getAccessTokenExpiresAt()
-                .isAfter(Instant.now())) {
+        if (
+                account.getAccessTokenExpiresAt()
+                        != null
+                        &&
+                        !account
+                                .getAccessTokenExpiresAt()
+                                .isAfter(
+                                        Instant.now()
+                                )
+        ) {
 
             account.setStatus(
                     AccountStatus.EXPIRED
             );
 
-            thirdPartyAccountRepository.save(
-                    account
-            );
+            thirdPartyAccountRepository
+                    .save(account);
 
             throw new ApiException(
                     HttpStatus.CONFLICT,
@@ -168,11 +205,13 @@ public class N8nExecutionContextService {
         }
 
         String memberId =
-                account.getExternalAccountId();
+                account
+                        .getExternalAccountId();
 
-        if (memberId == null
-                || memberId.isBlank()) {
-
+        if (
+                memberId == null ||
+                        memberId.isBlank()
+        ) {
             throw new ApiException(
                     HttpStatus.CONFLICT,
                     "LINKEDIN_MEMBER_ID_MISSING",
@@ -181,42 +220,28 @@ public class N8nExecutionContextService {
         }
 
         String accessToken =
-                encryptionService.decrypt(
-                        account.getAccessTokenEnc()
-                );
+                encryptionService
+                        .decrypt(
+                                account
+                                        .getAccessTokenEnc()
+                        );
 
         String authorUrn =
                 "urn:li:person:"
                         + memberId;
 
-        return new N8nExecutionContext(
-                publication.getId(),
-
-                publication
-                        .getDestination()
-                        .name(),
-
-                publication
-                        .getContent()
-                        .getTitle(),
-
-                publication
-                        .getContent()
-                        .getBody(),
-
-                publication.getScheduledAt(),
-
+        return buildContext(
+                publication,
                 null,
                 null,
-
                 accessToken,
-
                 authorUrn,
-
                 linkedInApiVersion
         );
     }
-    private N8nExecutionContext createWordPressContext(
+
+    private N8nExecutionContext
+    createWordPressContext(
             Publication publication,
             Long userId) {
 
@@ -227,15 +252,18 @@ public class N8nExecutionContextService {
                                 ThirdPartyType.WORDPRESS
                         )
                         .orElseThrow(
-                                () -> new ApiException(
-                HttpStatus.CONFLICT,
-                "WORDPRESS_ACCOUNT_NOT_CONNECTED",
-                "Aucun compte WordPress connecté.")
+                                () ->
+                                        new ApiException(
+                                                HttpStatus.CONFLICT,
+                                                "WORDPRESS_ACCOUNT_NOT_CONNECTED",
+                                                "Aucun compte WordPress connecté."
+                                        )
                         );
 
-        if (account.getStatus()
-                != AccountStatus.CONNECTED) {
-
+        if (
+                account.getStatus() !=
+                        AccountStatus.CONNECTED
+        ) {
             throw new ApiException(
                     HttpStatus.CONFLICT,
                     "WORDPRESS_ACCOUNT_INACTIVE",
@@ -244,14 +272,19 @@ public class N8nExecutionContextService {
         }
 
         String credentials =
-                encryptionService.decrypt(
-                        account.getAccessTokenEnc()
-                );
+                encryptionService
+                        .decrypt(
+                                account
+                                        .getAccessTokenEnc()
+                        );
 
         int separatorIndex =
-                credentials.indexOf(':');
+                credentials
+                        .indexOf(':');
 
-        if (separatorIndex <= 0) {
+        if (
+                separatorIndex <= 0
+        ) {
             throw new IllegalStateException(
                     "Identifiants WordPress invalides."
             );
@@ -268,28 +301,95 @@ public class N8nExecutionContextService {
                         separatorIndex + 1
                 );
 
-        return new N8nExecutionContext(
-                publication.getId(),
-                publication
-                        .getDestination()
-                        .name(),
-
-                publication
-                        .getContent()
-                        .getTitle(),
-
-                publication
-                        .getContent()
-                        .getBody(),
-
-                publication.getScheduledAt(),
-
+        return buildContext(
+                publication,
                 account.getSiteUrl(),
-
                 username,
                 appPassword,
                 null,
                 null
+        );
+    }
+
+    private N8nExecutionContext
+    buildContext(
+            Publication publication,
+            String siteUrl,
+            String username,
+            String credential,
+            String authorUrn,
+            String apiVersion) {
+
+        Content content =
+                publication
+                        .getContent();
+
+        ContentMedia media =
+                content
+                        .getMediaItems()
+                        .stream()
+                        .findFirst()
+                        .orElse(null);
+
+        Long mediaId =
+                media != null
+                        ? media.getId()
+                        : null;
+
+        String mediaContentType =
+                media != null
+                        ? media.getContentType()
+                        : null;
+
+        String mediaOriginalFilename =
+                media != null
+                        ? media.getOriginalFilename()
+                        : null;
+
+        String mediaAltText =
+                media != null
+                        ? media.getAltText()
+                        : null;
+
+        String mediaDownloadUrl =
+                media != null
+                        ? publicUrl
+                        + "/api/n8n/internal/media/"
+                        + media.getId()
+                        : null;
+
+        return new N8nExecutionContext(
+                publication.getId(),
+
+                publication
+                        .getDestination()
+                        .name(),
+
+                content.getTitle(),
+
+                content.getBody(),
+
+                publication.getScheduledAt(),
+
+                siteUrl,
+
+                username,
+
+                credential,
+
+                authorUrn,
+
+                apiVersion,
+
+                mediaId,
+
+                mediaContentType,
+
+                mediaOriginalFilename,
+
+                mediaAltText,
+
+                mediaDownloadUrl
         );
     }
 }
