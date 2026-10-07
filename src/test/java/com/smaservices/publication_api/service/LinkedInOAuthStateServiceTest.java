@@ -85,11 +85,57 @@ class LinkedInOAuthStateServiceTest {
         String state =
                 stateService.createState(42L);
 
-        String tampered =
-                state.substring(
+        /*
+         * Decode the outer Base64URL layer first.
+         * This gives us the encrypted state string.
+         */
+        String encryptedState =
+                new String(
+                        Base64
+                                .getUrlDecoder()
+                                .decode(state),
+                        StandardCharsets.UTF_8
+                );
+
+        /*
+         * Modify a character in the middle of the encrypted payload.
+         * Unlike changing the final Base64 character, this guarantees
+         * that the encrypted value itself is modified.
+         */
+        int index =
+                encryptedState.length() / 2;
+
+        char current =
+                encryptedState.charAt(index);
+
+        char replacement =
+                current == 'A'
+                        ? 'B'
+                        : 'A';
+
+        String tamperedEncryptedState =
+                encryptedState.substring(
                         0,
-                        state.length() - 1
-                ) + "A";
+                        index
+                )
+                        + replacement
+                        + encryptedState.substring(
+                        index + 1
+                );
+
+        /*
+         * Rebuild a syntactically valid OAuth state.
+         */
+        String tampered =
+                Base64
+                        .getUrlEncoder()
+                        .withoutPadding()
+                        .encodeToString(
+                                tamperedEncryptedState
+                                        .getBytes(
+                                                StandardCharsets.UTF_8
+                                        )
+                        );
 
         ApiException exception =
                 assertThrows(
@@ -100,6 +146,11 @@ class LinkedInOAuthStateServiceTest {
                                                 tampered
                                         )
                 );
+
+        assertEquals(
+                HttpStatus.UNAUTHORIZED,
+                exception.getStatus()
+        );
 
         assertEquals(
                 "LINKEDIN_OAUTH_STATE_INVALID",

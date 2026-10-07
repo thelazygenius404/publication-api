@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.Instant;
 import java.util.stream.Collectors;
@@ -124,6 +125,32 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
+                .body(response);
+    }
+
+    @ExceptionHandler(
+            MaxUploadSizeExceededException.class
+    )
+    public ResponseEntity<ApiErrorResponse>
+    handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException exception,
+            HttpServletRequest request) {
+
+        ApiErrorResponse response =
+                new ApiErrorResponse(
+                        Instant.now(),
+                        HttpStatus.PAYLOAD_TOO_LARGE.value(),
+                        HttpStatus.PAYLOAD_TOO_LARGE
+                                .getReasonPhrase(),
+                        "MEDIA_TOO_LARGE",
+                        "Le fichier média ne peut pas dépasser 10 Mo.",
+                        request.getRequestURI()
+                );
+
+        return ResponseEntity
+                .status(
+                        HttpStatus.PAYLOAD_TOO_LARGE
+                )
                 .body(response);
     }
 

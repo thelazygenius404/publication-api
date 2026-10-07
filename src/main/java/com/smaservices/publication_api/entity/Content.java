@@ -12,7 +12,9 @@ import java.util.List;
 public class Content {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(
+            strategy = GenerationType.IDENTITY
+    )
     private Long id;
 
     @Column(
@@ -21,7 +23,10 @@ public class Content {
     )
     private String title;
 
-    @Column(nullable = false, columnDefinition = "LONGTEXT")
+    @Column(
+            nullable = false,
+            columnDefinition = "LONGTEXT"
+    )
     private String body;
 
     @Enumerated(EnumType.STRING)
@@ -53,8 +58,18 @@ public class Content {
     private List<Publication> publications =
             new ArrayList<>();
 
+    @OneToMany(
+            mappedBy = "content",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @OrderBy("createdAt ASC")
+    private List<ContentMedia> mediaItems =
+            new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
+
         Instant now =
                 Instant.now();
 
@@ -64,6 +79,7 @@ public class Content {
 
     @PreUpdate
     protected void onUpdate() {
+
         updatedAt =
                 Instant.now();
     }
@@ -78,7 +94,9 @@ public class Content {
 
     public void setTitle(
             String title) {
-        this.title = title;
+
+        this.title =
+                title;
     }
 
     public String getBody() {
@@ -87,7 +105,9 @@ public class Content {
 
     public void setBody(
             String body) {
-        this.body = body;
+
+        this.body =
+                body;
     }
 
     public ContentStatus getStatus() {
@@ -96,7 +116,9 @@ public class Content {
 
     public void setStatus(
             ContentStatus status) {
-        this.status = status;
+
+        this.status =
+                status;
     }
 
     public Instant getCreatedAt() {
@@ -113,10 +135,16 @@ public class Content {
 
     public void setUser(
             User user) {
-        this.user = user;
+
+        this.user =
+                user;
     }
 
     public List<Publication> getPublications() {
         return publications;
+    }
+
+    public List<ContentMedia> getMediaItems() {
+        return mediaItems;
     }
 }
